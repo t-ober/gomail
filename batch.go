@@ -1,6 +1,6 @@
 package main
 
-// Credits to dkasabovn:
+// Credit for a lot of the code goes to dkasabovn:
 // https://github.com/googleapis/google-api-go-client/issues/179#issuecomment-1641490906
 import (
 	"bufio"
@@ -26,33 +26,9 @@ const (
 )
 
 type Service struct {
-	GService *gmail.Service
-	client   http.Client
-	Batch    *BatchService
-}
-
-type BatchService struct {
-	s     *Service
-	Email *BatchEmailService
-}
-
-func NewBatchservice(s *Service) *BatchService {
-	rs := &BatchService{s: s, Email: NewBatchEmailService(s)}
-	return rs
-}
-
-func NewService(ctx context.Context) (*Service, error) {
-	gsvc, client, err := GetService(ctx)
-	if err != nil {
-		return nil, err
-	}
-	svc := &Service{
-		GService: gsvc,
-		client:   *client,
-	}
-	batch := NewBatchservice(svc)
-	svc.Batch = batch
-	return svc, nil
+	Regular *gmail.Service
+	client  http.Client
+	Batch   *BatchEmailService
 }
 
 type BatchEmailService struct {
@@ -62,6 +38,20 @@ type BatchEmailService struct {
 func NewBatchEmailService(s *Service) *BatchEmailService {
 	rs := &BatchEmailService{s: s}
 	return rs
+}
+
+func NewService(ctx context.Context) (*Service, error) {
+	gsvc, client, err := GetService(ctx)
+	if err != nil {
+		return nil, err
+	}
+	svc := &Service{
+		Regular: gsvc,
+		client:  *client,
+	}
+	batch := NewBatchEmailService(svc)
+	svc.Batch = batch
+	return svc, nil
 }
 
 type BatchGetEmailsRequest struct {
@@ -127,9 +117,9 @@ func (c *BatchEmailsCall) doRequest() (*http.Response, error) {
 		for k, v := range c.header_ {
 			reqHeaders[k] = v
 		}
-		reqHeaders.Set("User-Agent", c.s.GService.UserAgent)
+		reqHeaders.Set("User-Agent", c.s.Regular.UserAgent)
 
-		urls := googleapi.ResolveRelative(c.s.GService.BasePath, "gmail/v1/users/{userId}/messages/{id}")
+		urls := googleapi.ResolveRelative(c.s.Regular.BasePath, "gmail/v1/users/{userId}/messages/{id}")
 		urls += "?" + c.urlParams_.Encode()
 		req, err := http.NewRequest("GET", urls, nil)
 		if err != nil {
@@ -148,7 +138,7 @@ func (c *BatchEmailsCall) doRequest() (*http.Response, error) {
 
 	writer.Close()
 
-	batchUrl := googleapi.ResolveRelative(c.s.GService.BasePath, "batch/gmail/v1")
+	batchUrl := googleapi.ResolveRelative(c.s.Regular.BasePath, "batch/gmail/v1")
 	req, err := http.NewRequest("POST", batchUrl, body)
 	if err != nil {
 		return nil, err

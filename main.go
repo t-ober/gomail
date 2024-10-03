@@ -25,7 +25,7 @@ func main() {
 	ctx := context.Background()
 	svc, err := NewService(ctx)
 	user := "me"
-	msgResponse, err := svc.GService.Users.Messages.List(user).Q(NewerThan(1, day).query).Fields("messages(id,payload/headers)").Do()
+	msgResponse, err := svc.Regular.Users.Messages.List(user).Q(NewerThan(1, day).query).Fields("messages(id,payload/headers)").Do()
 	if err != nil {
 		log.Fatalf("Could not retrieve messages: %v", err)
 	}
@@ -36,7 +36,7 @@ func main() {
 	}
 	fmt.Printf("Requesting the following message ids: %v\n", msgIds)
 
-	msgCall := svc.Batch.Email.Get("me", msgIds).Context(ctx).Format("full")
+	msgCall := svc.Batch.Get("me", msgIds).Context(ctx).Format("full")
 	msgs, err := msgCall.Do()
 	if err != nil {
 		log.Fatalf("Error during batch call: %v", err)
