@@ -1,4 +1,4 @@
-package main
+package service
 
 // Credit for a lot of the code goes to dkasabovn:
 // https://github.com/googleapis/google-api-go-client/issues/179#issuecomment-1641490906
@@ -13,7 +13,6 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"net/http/httputil"
 	"net/textproto"
 	"net/url"
 
@@ -164,8 +163,8 @@ func (c *BatchEmailsCall) Do() ([]*gmail.Message, error) {
 		return nil, err
 	}
 
-	b, _ := httputil.DumpResponse(res, true)
-	log.Println(string(b))
+	// b, _ := httputil.DumpResponse(res, true)
+	// log.Println(string(b))
 
 	_, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
 	if err != nil {

@@ -1,31 +1,22 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
-	"time"
+	"os"
 
+	"github.com/t-ober/gomail/service"
 	"google.golang.org/api/gmail/v1"
 )
 
-func (q *gmailQuery) append(query string) {
-	if q.query == "" {
-		q.query = query
-	} else {
-
-	}
-}
-
-func gmailTime(t time.Time) string {
-	return t.Format("04/16/2004")
-}
-
 func main() {
 	ctx := context.Background()
-	svc, err := NewService(ctx)
+	svc, err := service.NewService(ctx)
 	user := "me"
-	msgResponse, err := svc.Regular.Users.Messages.List(user).Q(NewerThan(1, day).query).Fields("messages(id,payload/headers)").Do()
+	msgResponse, err := svc.Regular.Users.Messages.List(user).Q(service.NewerThan(1, service.Day).Query).Fields("messages(id,payload/headers)").Do()
 	if err != nil {
 		log.Fatalf("Could not retrieve messages: %v", err)
 	}
@@ -41,11 +32,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error during batch call: %v", err)
 	}
+	_ = msgs
 
-	for _, msg := range msgs {
-		printMessage(msg)
+	if err != nil {
+		log.Fatalf("Could not marshal message: %v", err)
 	}
-
+	// jsonStr := fmt.Sprintf("%s", json)
+	path := "./email.json"
+	file, err := os.Create(path)
+	if err != nil {
+		log.Fatalf("Could not create file: %v", err)
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	msg := msgs[0]
+	jsonMsg, err := json.Marshal(msg)
+	writer.Write(jsonMsg)
+	// encoder := json.NewEncoder(file)
+	// encoder.Encode(jsonMsg)
 }
 
 func printMessage(msg *gmail.Message) {
