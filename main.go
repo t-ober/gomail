@@ -8,11 +8,18 @@ import (
 	"log"
 	"os"
 
-	"github.com/t-ober/gomail/service"
+	// tea "github.com/charmbracelet/bubbletea"
+	"gomail/app"
+	"gomail/service"
+
 	"google.golang.org/api/gmail/v1"
 )
 
 func main() {
+	app.Run()
+}
+
+func startService() {
 	ctx := context.Background()
 	svc, err := service.NewService(ctx)
 	user := "me"

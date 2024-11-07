@@ -19,6 +19,10 @@ type Mail struct {
 	Msg       string
 }
 
+func (m Mail) Title() string       { return m.Subject }
+func (m Mail) Description() string { return m.Msg }
+func (m Mail) FilterValue() string { return m.Sender + " " + m.Subject }
+
 const (
 	DB_PATH    = "./mail_db.db"
 	TABLE_NAME = "Mail"
