@@ -1,136 +1,43 @@
 package app
 
 import (
-	"fmt"
 	"gomail/list"
 	"gomail/mail"
-	"io"
-	"log"
-	"log/slog"
-	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
-
-type model struct {
-	list        list.Model
-	vp          viewportModel
-	showingList bool
-	logger      *slog.Logger
-	dump        io.Writer
+type listModel struct {
+	list list.Model
 }
 
-func (m model) Init() tea.Cmd {
+func (m listModel) Init() tea.Cmd {
 	return nil
 }
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	LogMessage(m.logger, msg)
+func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "h":
-			if m.showingList == false {
-				m.showingList = true
-			}
-		case "ctrl+c":
-			return m, tea.Quit
-		case "enter":
-			if m.showingList {
-				m.showingList = false
-
-				content := "Hello World"
-				m.vp.content = content
-				m.vp.viewport.SetContent(content)
-				fmt.Printf("vp ready: %t", m.vp.ready)
-				return m, nil //, tea.Quit
-			}
-		}
 	case tea.WindowSizeMsg:
-		if m.showingList {
-			h, v := docStyle.GetFrameSize()
-			m.list.SetSize(msg.Width-h, msg.Height-v)
-		}
-		_ = m.UpdateAll(msg)
-		return m, nil
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
+		model, cmd := m.list.Update(msg)
+		m.list = model
+		return m, cmd
 	}
-
-	var cmd tea.Cmd
-	if m.showingList {
-		m.list, cmd = m.list.Update(msg)
-	} else {
-		vpModel, vpCmd := m.vp.Update(msg)
-		if vm, ok := vpModel.(viewportModel); ok {
-			m.vp = vm
-			cmd = vpCmd
-		}
-	}
+	model, cmd := m.list.Update(msg)
+	m.list = model
 	return m, cmd
 }
 
-func (m model) View() string {
-	if m.showingList {
-		return docStyle.Render(m.list.View())
-	}
-	m.logger.Debug("Running vp view", "ready", m.vp.ready)
-	return m.vp.View()
+func (m listModel) View() string {
+	return m.list.View()
 }
 
-type Updateable interface {
-	Update(msg tea.Msg) (tea.Model, tea.Cmd)
-}
-
-func (m *model) UpdateAll(msg tea.Msg) []tea.Cmd {
-	// TODO: Simplification does not work since list does not satisfy tea.Model
-	cmds := []tea.Cmd{}
-	list, cmd := m.list.Update(msg)
-	m.list = list
-	cmds = append(cmds, cmd)
-
-	vp, cmd := m.vp.Update(msg)
-	m.vp = vp.(viewportModel)
-	cmds = append(cmds, cmd)
-
-	return cmds
-}
-
-func Run() {
-	f, err := os.Create("gomail.log")
-	if err != nil {
-		log.Fatalf("Could not create log file: %v", err)
-	}
-	d, err := os.Create("messages.log")
-	if err != nil {
-		log.Fatalf("Could not create message log file: %v", err)
-	}
-	logger := slog.New(slog.NewTextHandler(f, &slog.HandlerOptions{
-		Level:     slog.LevelDebug,
-		AddSource: true,
-	}))
-	slog.SetDefault(logger)
-
-	m := model{
-		list:        list.New(getTestMails(), list.NewDefaultMailDelegate(), 0, 0),
-		showingList: true,
-		logger:      logger,
-		dump:        d,
-		vp: viewportModel{
-			dump:   d,
-			logger: logger,
-		},
-	}
-	m.list.Title = "Gomail"
-
-	p := tea.NewProgram(m, tea.WithAltScreen())
-
-	if _, err := p.Run(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+func NewListModel() listModel {
+	list := list.New(getTestMails(), list.NewDefaultMailDelegate(), 0, 0)
+	list.Title = "Gomail"
+	return listModel{
+		list,
 	}
 }
 
