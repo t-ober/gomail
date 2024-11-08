@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"log/slog"
 	"os"
@@ -18,7 +17,6 @@ type baseModel struct {
 	vp          viewportModel
 	showingList bool
 	logger      *slog.Logger
-	dump        io.Writer
 }
 
 func (m baseModel) Init() tea.Cmd {
@@ -101,10 +99,6 @@ func Run() {
 	if err != nil {
 		log.Fatalf("Could not create log file: %v", err)
 	}
-	d, err := os.Create("messages.log")
-	if err != nil {
-		log.Fatalf("Could not create message log file: %v", err)
-	}
 	logger := slog.New(slog.NewTextHandler(f, &slog.HandlerOptions{
 		Level:     slog.LevelDebug,
 		AddSource: true,
@@ -115,9 +109,7 @@ func Run() {
 		list:        NewListModel(),
 		showingList: true,
 		logger:      logger,
-		dump:        d,
 		vp: viewportModel{
-			dump:   d,
 			logger: logger,
 		},
 	}

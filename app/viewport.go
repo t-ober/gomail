@@ -5,7 +5,6 @@ package app
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
 	"strings"
 
@@ -41,7 +40,6 @@ type viewportModel struct {
 	ready    bool
 	viewport viewport.Model
 	logger   *slog.Logger
-	dump     io.Writer
 }
 
 func (m viewportModel) Init() tea.Cmd {
@@ -66,6 +64,7 @@ func (m viewportModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		footerHeight := lipgloss.Height(m.footerView())
 		verticalMarginHeight := headerHeight + footerHeight
 
+		m.logger.Debug("ready-check", "ready", m.ready)
 		if !m.ready {
 			// Since this program is using the full size of the viewport we
 			// need to wait until we've received the window dimensions before

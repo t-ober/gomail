@@ -80,7 +80,6 @@ func getTestMails() []list.Item {
 			Msg:       "I've attached the latest project updates as requested.",
 		},
 	}
-	// Convert []mail.Mail to []list.Item
 	items := make([]list.Item, len(mails))
 	for i, m := range mails {
 		items[i] = m
