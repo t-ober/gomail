@@ -8,22 +8,35 @@ import (
 	"log"
 	"os"
 
-	// tea "github.com/charmbracelet/bubbletea"
-	"gomail/app"
+	// "gomail/app"
 	"gomail/service"
 
 	"google.golang.org/api/gmail/v1"
 )
 
 func main() {
-	app.Run()
+	// app.Run()
+	testService()
 }
 
-func startService() {
+func testService() {
 	ctx := context.Background()
+	// TODO: fails if token does not work anymore (probably expiry) handle accordingly
 	svc, err := service.NewService(ctx)
+	if err != nil {
+		log.Fatalf("Could not start service %v\n", err)
+	}
 	user := "me"
-	msgResponse, err := svc.Regular.Users.Messages.List(user).Q(service.NewerThan(1, service.Day).Query).Fields("messages(id,payload/headers)").Do()
+	msgs := requestRecentMessages(ctx, user, svc)
+	_ = msgs
+
+}
+
+func requestRecentMessages(ctx context.Context, user string, svc *service.Service) []*gmail.Message {
+	// retrieve msg ids
+	query := service.NewerThan(1, service.Day).Query
+	// TODO: implement service wrapper
+	msgResponse, err := svc.Regular.Users.Messages.List(user).Q(query).Fields("messages(id,payload/headers)").Do()
 	if err != nil {
 		log.Fatalf("Could not retrieve messages: %v", err)
 	}
@@ -34,29 +47,27 @@ func startService() {
 	}
 	fmt.Printf("Requesting the following message ids: %v\n", msgIds)
 
+	// retrieve payload
 	msgCall := svc.Batch.Get("me", msgIds).Context(ctx).Format("full")
 	msgs, err := msgCall.Do()
 	if err != nil {
 		log.Fatalf("Error during batch call: %v", err)
 	}
-	_ = msgs
+	return msgs
+}
 
-	if err != nil {
-		log.Fatalf("Could not marshal message: %v", err)
-	}
-	// jsonStr := fmt.Sprintf("%s", json)
-	path := "./email.json"
+func dumpEmail(path string, msg *gmail.Message) {
 	file, err := os.Create(path)
 	if err != nil {
 		log.Fatalf("Could not create file: %v", err)
 	}
 	defer file.Close()
 	writer := bufio.NewWriter(file)
-	msg := msgs[0]
 	jsonMsg, err := json.Marshal(msg)
 	writer.Write(jsonMsg)
-	// encoder := json.NewEncoder(file)
-	// encoder.Encode(jsonMsg)
+	if err != nil {
+		log.Fatalf("Could not marshal message: %v", err)
+	}
 }
 
 func printMessage(msg *gmail.Message) {
