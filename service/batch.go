@@ -24,12 +24,6 @@ const (
 	basePath = "https://gmail.googleapis.com/"
 )
 
-type Service struct {
-	Regular *gmail.Service
-	client  http.Client
-	Batch   *BatchEmailService
-}
-
 type BatchEmailService struct {
 	s *Service
 }

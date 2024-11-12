@@ -27,33 +27,8 @@ func testService() {
 		log.Fatalf("Could not start service %v\n", err)
 	}
 	user := "me"
-	msgs := requestRecentMessages(ctx, user, svc)
+	msgs := svc.RequestRecentMessages(ctx, user)
 	_ = msgs
-
-}
-
-func requestRecentMessages(ctx context.Context, user string, svc *service.Service) []*gmail.Message {
-	// retrieve msg ids
-	query := service.NewerThan(1, service.Day).Query
-	// TODO: implement service wrapper
-	msgResponse, err := svc.Regular.Users.Messages.List(user).Q(query).Fields("messages(id,payload/headers)").Do()
-	if err != nil {
-		log.Fatalf("Could not retrieve messages: %v", err)
-	}
-	msgsMeta := msgResponse.Messages
-	msgIds := make([]string, 0, len(msgsMeta))
-	for _, msg := range msgsMeta {
-		msgIds = append(msgIds, msg.Id)
-	}
-	fmt.Printf("Requesting the following message ids: %v\n", msgIds)
-
-	// retrieve payload
-	msgCall := svc.Batch.Get("me", msgIds).Context(ctx).Format("full")
-	msgs, err := msgCall.Do()
-	if err != nil {
-		log.Fatalf("Error during batch call: %v", err)
-	}
-	return msgs
 }
 
 func dumpEmail(path string, msg *gmail.Message) {
